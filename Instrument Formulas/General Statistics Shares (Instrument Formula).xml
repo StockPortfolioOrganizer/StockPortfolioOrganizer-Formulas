@@ -1,0 +1,57 @@
+<InstrumentFormulaObject Version="1.0"><Name>General Statistics Shares</Name><Description /><InstrumentType>Share</InstrumentType><OutputFieldFormulaObjects><OutputFieldFormulaObject Version="1.0"><Name>Total Cost</Name><Description /><Category>Common</Category><Order>1</Order><FormulaObject Version="1.0"><Name>Total Cost Field</Name><Description>Computes a trades total cost.</Description><DomainKey>7</DomainKey><Code>function computeTotalCost()
+{
+	if(InstrumentType == InstrumentTypes.Share)
+	{
+		return Math.round(Price * Quantity + TotalTradeExpenses, RoundingDecimals);
+	}
+	else if(InstrumentType == InstrumentTypes.ShareMargin)
+	{
+	       if (IsFixedMargin == true)
+	       {
+	       	return Math.round(MarginPerContract * Quantity + TotalTradeExpenses, RoundingDecimals);
+	       }
+	       else
+	       {
+	       	var marketExposure = Price * Quantity;
+	       	return Math.round(marketExposure * Leverage + TotalTradeExpenses, RoundingDecimals);
+	       }
+	}
+	else if(InstrumentType == InstrumentTypes.Futures)
+	{
+	       if (IsFixedMargin == true)
+	       {
+	       	return Math.round(MarginPerContract * Quantity + TotalTradeExpenses, RoundingDecimals);
+	       }
+	       else
+	       {
+	       	try
+	       	{
+	       		var marketExposure = Price / TickSize * TickValue * Quantity;
+	       		return Math.round(marketExposure * Leverage + TotalTradeExpenses, RoundingDecimals);
+	       	}
+	       	catch(e)
+	       	{
+	       		return "NA";
+	       	}
+	       }	
+	}
+	else if(InstrumentType == InstrumentTypes.Forex)
+	{
+	       if (IsFixedMargin == true)
+	       {
+	       	return Math.round(MarginPerContract * Quantity + TotalTradeExpenses, RoundingDecimals);
+	       }
+	       else
+	       {
+	       	var marketExposure = Price * LotSize * Quantity;
+	       	return Math.round(marketExposure * Leverage + TotalTradeExpenses, RoundingDecimals);
+	       }
+	}
+	else
+	{
+		throw "Unsupported Instrument Type: " + InstrumentType ;
+	}
+}
+
+computeTotalCost();
+</Code><IncludeObjects /><ParameterBaseObjects><IntegerParameterObject Version="1.0"><Name>RoundingDecimals</Name><Description>Number of decimal places to round the total cost to</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>10</MaxValue></IntegerParameterObject></ParameterBaseObjects></FormulaObject><IsEnabled>true</IsEnabled></OutputFieldFormulaObject></OutputFieldFormulaObjects></InstrumentFormulaObject>

@@ -1,0 +1,260 @@
+<InstrumentFormulaObject Version="1.0"><Name>Position Sizing (Max Percent Loss)</Name><Description>Calculates the quantity or stop loss based on the maximum allowed percent loss for the account.
+
+If the quantity and price are entered it will calculate the suggested stop loss.
+
+If the price and stop loss are entered it will calculate the suggested quantity.</Description><InstrumentType>Share</InstrumentType><OutputFieldFormulaObjects><OutputFieldFormulaObject Version="1.0"><Name>Volatility</Name><Description /><Category>Stop Loss</Category><Order>6</Order><FormulaObject Version="1.0"><Name>Initial Stop Loss (Volatility) Field</Name><Description>Computes a stop loss value using the ATR indicator based on the currently entered price.</Description><DomainKey>7</DomainKey><Code>function computeStandardDeviationValue(tickerKey, periods)
+{
+	var quotes = GetLatestQuotesByTickerKey(tickerKey, TickerQuotesTypes.EndOfDay);
+	var close = SelectQuoteField(quotes, QuoteFieldTypes.Close);
+	var stdDev = StandardDeviation(close, periods);
+
+	return stdDev.NewestOrDefault().Value;
+}
+
+if(TickerKey.IsValid == false)
+{
+	"Please select a ticker.";
+}
+else if(Price &lt;= 0M)
+{
+	"Enter a price.";
+}
+else
+{
+	var stdDevValue = computeStandardDeviationValue(TickerKey, StandardDeviationPeriods);
+	
+	Math.round(Price - StandardDeviationMultiplier * stdDevValue, RoundingDecimals);
+}</Code><IncludeObjects /><ParameterBaseObjects><DoubleParameterObject Version="1.0"><Name>StandardDeviationMultiplier</Name><Description>The number of standard deviations that will be used when the stop loss is computed.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>5</MaxValue></DoubleParameterObject><IntegerParameterObject Version="1.0"><Name>RoundingDecimals</Name><Description>Number of decimal places to round the stop loss price value to.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>10</MaxValue></IntegerParameterObject><DecimalParameterObject Version="1.0"><Name>StandardDeviationPeriods</Name><Description>The number of periods to use when calculating the standard deviation of the closing price.</Description><DefaultValue>14</DefaultValue><MinValue>1</MinValue><MaxValue>100</MaxValue></DecimalParameterObject></ParameterBaseObjects></FormulaObject><IsEnabled>true</IsEnabled></OutputFieldFormulaObject><OutputFieldFormulaObject Version="1.0"><Name>Net Liquidation Value</Name><Description /><Category>Position Sizing</Category><Order>2</Order><FormulaObject Version="1.0"><Name>Net Liquidation Value At Stop Loss Field</Name><Description>Computes the total value of the account and trade groups the trade belongs to. This is the account balance and total margin of all the trades.</Description><DomainKey>7</DomainKey><Code>function isValid(element, index, array) {
+	return element.IsValid;
+}
+
+function netLiquidationValueAtStopLoss(acc, value) {
+	var tradeGroup = GetTradeGroupByID(value);
+	
+	tradeGroup.Trades.AddWhereIsSoldFilter(false);
+	tradeGroup.Trades.ApplyFilters();
+	
+	return tradeGroup.Trades.NetLiquidationValueAtStopLoss.Value + acc;
+}
+
+if(AccountID.IsValid == false)
+{
+	"Please select an account first";
+}
+else if(TradeGroupID.length == 0 || TradeGroupID.some(isValid) == false)
+{
+	"Please select one or more trade groups first";
+}
+else
+{
+	var account = GetAccountByID(AccountID);
+	if(account.AccountTransactions.Balance.Value &lt;= 0M)
+	{
+		"Account balance is negative. Please correct the initial balance."
+	}
+	else
+	{
+		account.AccountTransactions.Balance.Value + TradeGroupID.reduce(netLiquidationValueAtStopLoss, 0M);
+	}	
+}</Code><IncludeObjects /><ParameterBaseObjects /></FormulaObject><IsEnabled>true</IsEnabled></OutputFieldFormulaObject><OutputFieldFormulaObject Version="1.0"><Name>Quantity</Name><Description /><Category>Position Sizing</Category><Order>3</Order><FormulaObject Version="1.0"><Name>Quantity Based On Max Allowed Percent Loss Field</Name><Description>This formula computes the quantity based on the stop loss price, purchase price and portfolio value.</Description><DomainKey>7</DomainKey><Code>function isValid(element, index, array) {
+	return element.IsValid;
+}
+
+function netLiquidationValueAtStopLoss(acc, value) {
+	var tradeGroup = GetTradeGroupByID(value);
+	
+	tradeGroup.Trades.AddWhereIsSoldFilter(false);
+	tradeGroup.Trades.ApplyFilters();
+	
+	return tradeGroup.Trades.NetLiquidationValueAtStopLoss.Value + acc;
+}
+
+function computeStopLossPrice() {
+	if(InitialStopLossType == InitialStopLossOrTargetTypes.Fixed)
+	{
+		return InitialStopLoss;
+	}
+	else if(InitialStopLossType == InitialStopLossOrTargetTypes.Percentage)
+	{
+		return (1M - InitialStopLoss) * Price;
+	}
+	else
+	{
+		return Price;
+	}
+}
+
+if(AccountID.IsValid == false)
+{
+	"Please select an account.";
+}
+else if(TradeGroupID.length == 0 || TradeGroupID.some(isValid) == false)
+{
+	"Please select one or more trade groups.";
+}
+else if(InitialStopLossType == InitialStopLossOrTargetTypes.None)
+{
+	"Enter a stop loss";
+}
+else if(Price &lt;= 0M)
+{
+	"Enter a price.";
+}
+else
+{
+	var account = GetAccountByID(AccountID);
+	if(account.AccountTransactions.Balance.Value &lt;= 0M)
+	{
+		"Account balance is negative. Please correct the initial balance."
+	}
+	else
+	{
+		var netLiquidationValueAtStopLoss = account.AccountTransactions.Balance.Value + TradeGroupID.reduce(netLiquidationValueAtStopLoss, 0M);
+		var maxAllowedLossAmount = netLiquidationValueAtStopLoss * (MaxLossPercent / 100M);
+		try
+		{		
+			Math.round(maxAllowedLossAmount / (Price - computeStopLossPrice()));
+		}
+		catch(e)
+		{
+			"NA"
+		}		
+	}
+}</Code><IncludeObjects /><ParameterBaseObjects><DecimalParameterObject Version="1.0"><Name>MaxLossPercent</Name><Description>The maximum percentage loss amount allowed. The suggested value is 2% </Description><DefaultValue>2</DefaultValue><MinValue>0</MinValue><MaxValue>100</MaxValue></DecimalParameterObject></ParameterBaseObjects></FormulaObject><IsEnabled>true</IsEnabled></OutputFieldFormulaObject><OutputFieldFormulaObject Version="1.0"><Name>Total Cost</Name><Description /><Category>General</Category><Order>1</Order><FormulaObject Version="1.0"><Name>Total Cost Field</Name><Description>Computes a trades total cost.</Description><DomainKey>7</DomainKey><Code>function computeTotalCost()
+{
+	if(InstrumentType == InstrumentTypes.Share)
+	{
+		return Math.round(Price * Quantity + TotalTradeExpenses, RoundingDecimals);
+	}
+	else if(InstrumentType == InstrumentTypes.ShareMargin)
+	{
+	       if (IsFixedMargin == true)
+	       {
+	       	return Math.round(MarginPerContract * Quantity + TotalTradeExpenses, RoundingDecimals);
+	       }
+	       else
+	       {
+	       	var marketExposure = Price * Quantity;
+	       	return Math.round(marketExposure * Leverage + TotalTradeExpenses, RoundingDecimals);
+	       }
+	}
+	else if(InstrumentType == InstrumentTypes.Futures)
+	{
+	       if (IsFixedMargin == true)
+	       {
+	       	return Math.round(MarginPerContract * Quantity + TotalTradeExpenses, RoundingDecimals);
+	       }
+	       else
+	       {
+	       	try
+	       	{
+	       		var marketExposure = Price / TickSize * TickValue * Quantity;
+	       		return Math.round(marketExposure * Leverage + TotalTradeExpenses, RoundingDecimals);
+	       	}
+	       	catch(e)
+	       	{
+	       		return "NA";
+	       	}
+	       }	
+	}
+	else if(InstrumentType == InstrumentTypes.Forex)
+	{
+	       if (IsFixedMargin == true)
+	       {
+	       	return Math.round(MarginPerContract * Quantity + TotalTradeExpenses, RoundingDecimals);
+	       }
+	       else
+	       {
+	       	var marketExposure = Price * LotSize * Quantity;
+	       	return Math.round(marketExposure * Leverage + TotalTradeExpenses, RoundingDecimals);
+	       }
+	}
+	else
+	{
+		throw "Unsupported Instrument Type: " + InstrumentType ;
+	}
+}
+
+computeTotalCost();
+</Code><IncludeObjects /><ParameterBaseObjects><IntegerParameterObject Version="1.0"><Name>RoundingDecimals</Name><Description>Number of decimal places to round the total cost to</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>10</MaxValue></IntegerParameterObject></ParameterBaseObjects></FormulaObject><IsEnabled>true</IsEnabled></OutputFieldFormulaObject><OutputFieldFormulaObject Version="1.0"><Name>Percent</Name><Description /><Category>Stop Loss</Category><Order>4</Order><FormulaObject Version="1.0"><Name>Initial Stop Loss (Percentage) Field</Name><Description /><DomainKey>7</DomainKey><Code>if(Price &lt;= 0M)
+{
+	"Enter a price.";
+}
+else
+{
+	var percent = 1M - (MaxLossPercent / 100M);
+	Math.round(Price * percent, RoundingDecimals);
+}</Code><IncludeObjects /><ParameterBaseObjects><IntegerParameterObject Version="1.0"><Name>RoundingDecimals</Name><Description>Number of decimal places to round the stop loss price value to.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>10</MaxValue></IntegerParameterObject><DecimalParameterObject Version="1.0"><Name>MaxLossPercent</Name><Description>The maximum percentage loss amount allowed. The suggested value is 2% </Description><DefaultValue>2</DefaultValue><MinValue>0</MinValue><MaxValue>100</MaxValue></DecimalParameterObject></ParameterBaseObjects></FormulaObject><IsEnabled>true</IsEnabled></OutputFieldFormulaObject><OutputFieldFormulaObject Version="1.0"><Name>ATR</Name><Description /><Category>Stop Loss</Category><Order>5</Order><FormulaObject Version="1.0"><Name>Initial Stop Loss (ATR) Field</Name><Description>Computes a stop loss value using the ATR indicator based on the currently entered price.</Description><DomainKey>7</DomainKey><Code>function computeAverageTrueRangeValue(tickerKey, periods)
+{
+	var quotes = GetLatestQuotesByTickerKey(tickerKey, TickerQuotesTypes.EndOfDay);
+	var atr = AverageTrueRange(quotes, periods);
+
+	return atr.NewestOrDefault().Value;
+}
+
+if(TickerKey.IsValid == false)
+{
+	"Please select a ticker.";
+}
+else if(Price &lt;= 0M)
+{
+	"Enter a price.";
+}
+else
+{
+	var atrValue = computeAverageTrueRangeValue(TickerKey, AverageTrueRangePeriods);
+	
+	Math.round(Price - AverageTrueRangeMultiplier * atrValue, RoundingDecimals);
+}</Code><IncludeObjects /><ParameterBaseObjects><IntegerParameterObject Version="1.0"><Name>RoundingDecimals</Name><Description>Number of decimal places to round the stop loss price value to.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>10</MaxValue></IntegerParameterObject><DecimalParameterObject Version="1.0"><Name>AverageTrueRangePeriods</Name><Description>The number of periods to use when calculating the ATR indicator.</Description><DefaultValue>14</DefaultValue><MinValue>1</MinValue><MaxValue>100</MaxValue></DecimalParameterObject><DoubleParameterObject Version="1.0"><Name>AverageTrueRangeMultiplier</Name><Description>The number of standard deviations or ATRs that will be used when the stop loss is computed.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>5</MaxValue></DoubleParameterObject></ParameterBaseObjects></FormulaObject><IsEnabled>true</IsEnabled></OutputFieldFormulaObject><OutputFieldFormulaObject Version="1.0"><Name>Max Loss Allowed</Name><Description /><Category>Stop Loss</Category><Order>7</Order><FormulaObject Version="1.0"><Name>Initial Stop Loss (Max Loss) Field</Name><Description /><DomainKey>7</DomainKey><Code>function isValid(element, index, array) {
+	return element.IsValid;
+}
+
+function netLiquidationValueAtStopLoss(acc, value) {
+	var tradeGroup = GetTradeGroupByID(value);
+	
+	tradeGroup.Trades.AddWhereIsSoldFilter(false);
+	tradeGroup.Trades.ApplyFilters();
+	
+	return tradeGroup.Trades.NetLiquidationValueAtStopLoss.Value + acc;
+}
+
+if(AccountID.IsValid == false)
+{
+	"Please select an account first";
+}
+else if(TradeGroupID.length == 0 || TradeGroupID.some(isValid) == false)
+{
+	"Please select one or more trade groups first";
+}
+else if(Price &lt;= 0M)
+{
+	"Enter a price.";
+}
+else if(Quantity &lt;= 0M)
+{
+	"Enter a quantity";
+}
+else
+{
+	var account = GetAccountByID(AccountID);
+	if(account.AccountTransactions.Balance.Value &lt;= 0M)
+	{
+		"Account balance is negative. Please correct the initial balance."
+	}
+	else
+	{
+		var netLiquidationValue = account.AccountTransactions.Balance.Value + TradeGroupID.reduce(netLiquidationValueAtStopLoss, 0M);
+		var maxLossPercentFraction = MaxLossPercent / 100M;
+		var maxLossAllowed = netLiquidationValue * maxLossPercentFraction;
+				
+		var totalAfterMaxLoss = (Price * Quantity - maxLossAllowed);
+		if(totalAfterMaxLoss &gt; 0M)
+		{
+			Math.round(totalAfterMaxLoss / Quantity, RoundingDecimals);
+		}
+		else
+		{
+			0M;
+		}
+	}	
+}</Code><IncludeObjects /><ParameterBaseObjects><IntegerParameterObject Version="1.0"><Name>RoundingDecimals</Name><Description>Number of decimal places to round the stop loss price value to.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>10</MaxValue></IntegerParameterObject><DecimalParameterObject Version="1.0"><Name>MaxLossPercent</Name><Description>The maximum percentage loss amount allowed. The suggested value is 2% </Description><DefaultValue>2</DefaultValue><MinValue>0</MinValue><MaxValue>100</MaxValue></DecimalParameterObject></ParameterBaseObjects></FormulaObject><IsEnabled>true</IsEnabled></OutputFieldFormulaObject></OutputFieldFormulaObjects></InstrumentFormulaObject>
