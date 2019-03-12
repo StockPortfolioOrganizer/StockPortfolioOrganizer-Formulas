@@ -1,0 +1,26 @@
+<CustomGridObject Version="1.0"><Name>Capital Gains (Australia)</Name><Description /><CustomGridTargetType>Trade</CustomGridTargetType><CustomGridColumnObjects><CustomGridColumnObject Version="1.0"><Name>Capital Gains</Name><Description /><Order>5</Order><ColumnFormatType>Decimal</ColumnFormatType><ColumnValueType>Decimal</ColumnValueType><FormulaObject Version="1.0"><Name>Capital Gains (Australia)</Name><Description /><DomainKey>17</DomainKey><Code>if(IsSold == true)
+{
+	var capitalGain = ProfitLoss - TotalBuyExpenses;
+	if(DaysHeld &gt; 365 &amp;&amp; capitalGain &gt; 0M)
+	{
+		capitalGain * 0.5M;
+	}
+	else
+	{
+		capitalGain;
+	}
+}
+else
+{
+	0M;
+}</Code><IncludeObjects /><ParameterBaseObjects /></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject><CustomGridColumnObject Version="1.0"><Name>Ticker</Name><Description /><Order>2</Order><ColumnFormatType>Standard</ColumnFormatType><ColumnValueType>String</ColumnValueType><FormulaObject Version="1.0"><Name>Ticker</Name><Description /><DomainKey>17</DomainKey><Code>var ticker = GetTickerByKey(TickerKey);
+ticker.Symbol + " [" + ticker.Currency.Code + "]";</Code><IncludeObjects /><ParameterBaseObjects /></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject><CustomGridColumnObject Version="1.0"><Name>Quantity</Name><Description /><Order>3</Order><ColumnFormatType>Integer</ColumnFormatType><ColumnValueType>Decimal</ColumnValueType><FormulaObject Version="1.0"><Name>Quantity</Name><Description /><DomainKey>17</DomainKey><Code>Quantity;</Code><IncludeObjects /><ParameterBaseObjects /></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject><CustomGridColumnObject Version="1.0"><Name>Market</Name><Description /><Order>1</Order><ColumnFormatType>Standard</ColumnFormatType><ColumnValueType>String</ColumnValueType><FormulaObject Version="1.0"><Name>Market</Name><Description /><DomainKey>17</DomainKey><Code>var market = GetMarketByID(MarketID);
+if(market.MarketType == MarketTypes.Ordinary)
+{
+	market.Name + " [" + market.Currency.Code + "]";
+}
+else
+{
+	market.Name;
+}
+</Code><IncludeObjects /><ParameterBaseObjects /></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject><CustomGridColumnObject Version="1.0"><Name>Sell Price</Name><Description /><Order>4</Order><ColumnFormatType>Decimal</ColumnFormatType><ColumnValueType>Decimal</ColumnValueType><FormulaObject Version="1.0"><Name>Sell Price</Name><Description /><DomainKey>17</DomainKey><Code>SellPrice;</Code><IncludeObjects /><ParameterBaseObjects /></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject></CustomGridColumnObjects></CustomGridObject>
