@@ -1,0 +1,60 @@
+<AlertObject Version="1.0"><Name>Target Hit</Name><Description>Triggers an alert when a target has been reached on a trade.</Description><AlertType>Trade</AlertType><ConditionFormulaObject Version="1.0"><Name>Target Hit</Name><Description /><DomainKey>17</DomainKey><Code>if(TargetType != InitialStopLossOrTargetTypes.None)
+{
+	if(PositionType == PositionTypes.Long)
+	{
+		TargetPrice &lt;= SellPrice;
+	}
+	else
+	{
+		TargetPrice &gt;= SellPrice;
+	}
+}
+else
+{
+	false;
+}</Code><IncludeObjects /><ParameterBaseObjects /></ConditionFormulaObject><MessageFormulaObject Version="1.0"><Name>Target Hit Message (HTML)</Name><Description /><DomainKey>17</DomainKey><Code>function positionTypeColor(positionType)
+{
+	switch(positionType)
+	{
+		case PositionTypes.Long:
+			return "Blue";
+		default:
+			return "Red";
+	}
+}
+
+function instrumentTypeColor(instrumentType)
+{
+	switch(instrumentType)
+	{
+		case InstrumentTypes.Share:
+			return "DarkKhaki";		
+		case InstrumentTypes.ShareMargin:
+			return "Chocolate";		
+		case InstrumentTypes.Futures:
+			return "Orange";		
+		case InstrumentTypes.Forex:
+			return "Gold";
+		default:
+			return "Red";
+	}
+}
+
+var ticker = GetTickerByKey(TickerKey);
+var currency = GetCurrencyByCode(BuySourceCurrencyCode);
+
+"One of your targets set at " + 
+"&lt;b&gt;&lt;font color=\"SteelBlue\"&gt;" + TargetPrice + "&lt;/font&gt;&lt;/b&gt;" +
+" has been hit. The affected trade is a " +
+"&lt;font color=\"" + positionTypeColor(PositionType) + "\"&gt;" +
+GetPositionTypeDisplayString(PositionType).toLowerCase() +
+"&lt;/font&gt; " +
+"&lt;font color=\"" + instrumentTypeColor(InstrumentType) + "\"&gt;" +
+GetInstrumentTypeDisplayString(InstrumentType).toLowerCase() +
+"&lt;/font&gt;" +	
+" position with " +
+"&lt;b&gt;&lt;font color=\"SteelBlue\"&gt;" + Quantity + "&lt;/font&gt;&lt;/b&gt;" +
+" unit(s) of '" +
+"&lt;b&gt;" + ticker.Symbol + " [" + ticker.Currency.Code + "]" + "&lt;/b&gt;" + 
+"' at " +
+"&lt;b&gt;&lt;font color=\"Green\"&gt;" + GetCurrencyFormattedString(currency, BuyPrice) + "&lt;/font&gt;&lt;/b&gt;";</Code><IncludeObjects /><ParameterBaseObjects /></MessageFormulaObject></AlertObject>
