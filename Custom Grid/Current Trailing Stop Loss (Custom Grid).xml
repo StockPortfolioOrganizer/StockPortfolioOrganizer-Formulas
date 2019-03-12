@@ -1,0 +1,113 @@
+<CustomGridObject Version="1.0"><Name>Current Trailing Stop Loss</Name><Description>Calculates a number of different stop losses based on the current sell price. If the trade is still open the sell price will be the current stock price. Various stop loss parameters can be changed for this formula from the 'Custom Grids' window.</Description><CustomGridTargetType>Trade</CustomGridTargetType><CustomGridColumnObjects><CustomGridColumnObject Version="1.0"><Name>ATR Stop Loss</Name><Description /><Order>5</Order><ColumnFormatType>Decimal</ColumnFormatType><ColumnValueType>Decimal</ColumnValueType><FormulaObject Version="1.0"><Name>Trailing Stop Loss (ATR)</Name><Description>Computes a stop loss value using the ATR indicator based on the currently entered price.</Description><DomainKey>17</DomainKey><Code>var quotes = GetLatestQuotesByTickerKey(TickerKey, TickerQuotesTypes.EndOfDay);
+var atr = AverageTrueRange(quotes, AverageTrueRangePeriods);
+var loss = atr.Multiply(AverageTrueRangeMultiplier);
+	
+var trailingStop;
+if(InitialStopLossType == InitialStopLossOrTargetTypes.None)
+{
+	trailingStop = AutoSwitchingTrailingStop(quotes, loss);
+}
+else
+{
+	if(PositionType == PositionTypes.Long)
+	{
+		trailingStop = LongTrailingStop(quotes, loss, BuyDateTime, InitialStopLossPrice);
+	}
+	else
+	{
+		trailingStop = ShortTrailingStop(quotes, loss, BuyDateTime, InitialStopLossPrice);
+	}		
+}
+
+var trailingStopPrice =  trailingStop.NewestOrDefault().Value;
+	
+Math.round(trailingStopPrice, RoundingDecimals);</Code><IncludeObjects /><ParameterBaseObjects><IntegerParameterObject Version="1.0"><Name>RoundingDecimals</Name><Description>Number of decimal places to round the stop loss price value to.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>10</MaxValue></IntegerParameterObject><DecimalParameterObject Version="1.0"><Name>AverageTrueRangePeriods</Name><Description>The number of periods to use when calculating the ATR indicator.</Description><DefaultValue>14</DefaultValue><MinValue>1</MinValue><MaxValue>100</MaxValue></DecimalParameterObject><DoubleParameterObject Version="1.0"><Name>AverageTrueRangeMultiplier</Name><Description>The number of standard deviations or ATRs that will be used when the stop loss is computed.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>5</MaxValue></DoubleParameterObject></ParameterBaseObjects></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject><CustomGridColumnObject Version="1.0"><Name>Position Information</Name><Description /><Order>1</Order><ColumnFormatType>Html</ColumnFormatType><ColumnValueType>String</ColumnValueType><FormulaObject Version="1.0"><Name>Position Information (HTML)</Name><Description /><DomainKey>17</DomainKey><Code>function positionTypeColor(positionType)
+{
+	switch(positionType)
+	{
+		case PositionTypes.Long:
+			return "Blue";
+		default:
+			return "Red";
+	}
+}
+
+function instrumentTypeColor(instrumentType)
+{
+	switch(instrumentType)
+	{
+		case InstrumentTypes.Share:
+			return "DarkKhaki";		
+		case InstrumentTypes.ShareMargin:
+			return "Chocolate";		
+		case InstrumentTypes.Futures:
+			return "Orange";		
+		case InstrumentTypes.Forex:
+			return "Gold";
+		default:
+			return "Red";
+	}
+}
+
+var ticker = GetTickerByKey(TickerKey);
+var currency = GetCurrencyByCode(BuySourceCurrencyCode);
+
+"&lt;font color=\"" + positionTypeColor(PositionType) + "\"&gt;" +
+GetPositionTypeDisplayString(PositionType) +
+"&lt;/font&gt; " +
+"&lt;font color=\"" + instrumentTypeColor(InstrumentType) + "\"&gt;" +
+GetInstrumentTypeDisplayString(InstrumentType).toLowerCase() +
+"&lt;/font&gt;" +	
+" position with " +
+"&lt;b&gt;&lt;font color=\"SteelBlue\"&gt;" + Quantity + "&lt;/font&gt;&lt;/b&gt;" +
+" unit(s) of '" +
+"&lt;b&gt;" + ticker.Symbol + " [" + ticker.Currency.Code + "]" + "&lt;/b&gt;" + 
+"' at " +
+"&lt;b&gt;&lt;font color=\"Green\"&gt;" + GetCurrencyFormattedString(currency, BuyPrice) + "&lt;/font&gt;&lt;/b&gt;";</Code><IncludeObjects /><ParameterBaseObjects /></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject><CustomGridColumnObject Version="1.0"><Name>Price Date &amp; Time</Name><Description /><Order>3</Order><ColumnFormatType>Standard</ColumnFormatType><ColumnValueType>String</ColumnValueType><FormulaObject Version="1.0"><Name>Sell Date &amp; Time</Name><Description /><DomainKey>17</DomainKey><Code>SellDateTime;</Code><IncludeObjects /><ParameterBaseObjects /></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject><CustomGridColumnObject Version="1.0"><Name>Current Price / Sell Price</Name><Description /><Order>4</Order><ColumnFormatType>Decimal</ColumnFormatType><ColumnValueType>Decimal</ColumnValueType><FormulaObject Version="1.0"><Name>Sell Price</Name><Description /><DomainKey>17</DomainKey><Code>SellPrice;</Code><IncludeObjects /><ParameterBaseObjects /></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject><CustomGridColumnObject Version="1.0"><Name>Volatility Stop Loss</Name><Description /><Order>6</Order><ColumnFormatType>Decimal</ColumnFormatType><ColumnValueType>Decimal</ColumnValueType><FormulaObject Version="1.0"><Name>Trailing Stop Loss (Volatility)</Name><Description>Computes a stop loss value using the ATR indicator based on the currently entered price.</Description><DomainKey>17</DomainKey><Code>var quotes = GetLatestQuotesByTickerKey(TickerKey, TickerQuotesTypes.EndOfDay);
+var close = SelectQuoteField(quotes, QuoteFieldTypes.Close);
+var stdDev = StandardDeviation(close, StandardDeviationPeriods);
+var loss = stdDev.Multiply(StandardDeviationMultiplier);
+	
+var trailingStop;
+if(InitialStopLossType == InitialStopLossOrTargetTypes.None)
+{
+	trailingStop = AutoSwitchingTrailingStop(quotes, loss);
+}
+else
+{
+	if(PositionType == PositionTypes.Long)
+	{
+		trailingStop = LongTrailingStop(quotes, loss, BuyDateTime, InitialStopLossPrice);
+	}
+	else
+	{
+		trailingStop = ShortTrailingStop(quotes, loss, BuyDateTime, InitialStopLossPrice);
+	}		
+}
+
+var trailingStopPrice =  trailingStop.NewestOrDefault().Value;
+	
+Math.round(trailingStopPrice, RoundingDecimals);</Code><IncludeObjects /><ParameterBaseObjects><DoubleParameterObject Version="1.0"><Name>StandardDeviationMultiplier</Name><Description>The number of standard deviations that will be used when the stop loss is computed.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>5</MaxValue></DoubleParameterObject><IntegerParameterObject Version="1.0"><Name>RoundingDecimals</Name><Description>Number of decimal places to round the stop loss price value to.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>10</MaxValue></IntegerParameterObject><DecimalParameterObject Version="1.0"><Name>StandardDeviationPeriods</Name><Description>The number of periods to use when calculating the standard deviation of the closing price.</Description><DefaultValue>14</DefaultValue><MinValue>1</MinValue><MaxValue>100</MaxValue></DecimalParameterObject></ParameterBaseObjects></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject><CustomGridColumnObject Version="1.0"><Name>Percentage Stop Loss</Name><Description /><Order>7</Order><ColumnFormatType>Decimal</ColumnFormatType><ColumnValueType>Decimal</ColumnValueType><FormulaObject Version="1.0"><Name>Trailing Stop Loss (Percent)</Name><Description /><DomainKey>17</DomainKey><Code>var quotes = GetLatestQuotesByTickerKey(TickerKey, TickerQuotesTypes.EndOfDay);
+var close = SelectQuoteField(quotes, QuoteFieldTypes.Close);
+var loss = close.Multiply(MaxLossPercent / 100M);
+	
+var trailingStop;
+if(InitialStopLossType == InitialStopLossOrTargetTypes.None)
+{
+	trailingStop = AutoSwitchingTrailingStop(quotes, loss);
+}
+else
+{
+	if(PositionType == PositionTypes.Long)
+	{
+		trailingStop = LongTrailingStop(quotes, loss, BuyDateTime, InitialStopLossPrice);
+	}
+	else
+	{
+		trailingStop = ShortTrailingStop(quotes, loss, BuyDateTime, InitialStopLossPrice);
+	}		
+}
+
+var trailingStopPrice =  trailingStop.NewestOrDefault().Value;
+	
+Math.round(trailingStopPrice, RoundingDecimals);</Code><IncludeObjects /><ParameterBaseObjects><IntegerParameterObject Version="1.0"><Name>RoundingDecimals</Name><Description>Number of decimal places to round the stop loss price value to.</Description><DefaultValue>2</DefaultValue><MinValue>1</MinValue><MaxValue>10</MaxValue></IntegerParameterObject><DecimalParameterObject Version="1.0"><Name>MaxLossPercent</Name><Description>The maximum percentage loss amount allowed. The suggested value is 2% </Description><DefaultValue>2</DefaultValue><MinValue>0</MinValue><MaxValue>100</MaxValue></DecimalParameterObject></ParameterBaseObjects></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject><CustomGridColumnObject Version="1.0"><Name>Is Sold</Name><Description /><Order>2</Order><ColumnFormatType>Standard</ColumnFormatType><ColumnValueType>Boolean</ColumnValueType><FormulaObject Version="1.0"><Name>Is Sold</Name><Description /><DomainKey>17</DomainKey><Code>IsSold;</Code><IncludeObjects /><ParameterBaseObjects /></FormulaObject><IsEnabled>true</IsEnabled></CustomGridColumnObject></CustomGridColumnObjects></CustomGridObject>
